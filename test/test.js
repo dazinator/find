@@ -11,12 +11,17 @@ function createBy(type) {
     var targets = [];
     num = num || 1;
     if (Array.isArray(dir)) dir = dir[0];
-    var opts = { template: dir + '/tmp-XXXXXX' + (ext || '') };
+    var nromalised = path.normalize(dir + '/tmp-XXXXXX' + (ext || ''));
+    var opts = { template: nromalised };
     for (var i = 0; i < num; ++i) {
       targets.push(tmp[type + 'Sync'](opts).name);
     }
     return targets;
   }
+}
+
+function escapeRegExp(string) {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
 }
 
 var createFilesUnder = createBy('file');
@@ -40,7 +45,7 @@ describe('API test', function() {
   beforeEach(function(done) {
     tmp.dir({unsafeCleanup: true}, function(err, dir) {
       if (err) return done(err);
-      testdir = dir;
+      testdir = dir;      
       done();
     });
   });
@@ -130,9 +135,10 @@ describe('API test', function() {
 
   it('`find.*` should find by regular expression against the full path', function() {
     var html = createFilesUnder(testdir, 1, '.html')[0];
-    var extensionless = path.join(path.dirname(html), path.basename(html, '.html'));
+    var extensionless = escapeRegExp(path.join(path.dirname(html), path.basename(html, '.html')));    
+    var regex = new RegExp('^' + extensionless)
 
-    htmlAll = find.fileSync(new RegExp(extensionless), testdir);
+    htmlAll = find.fileSync(regex, testdir);
     assert.equal( html, htmlAll.join(''));
   });
 
